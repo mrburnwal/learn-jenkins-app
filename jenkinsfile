@@ -11,6 +11,7 @@ pipeline{
             steps {
                 sh """
                    echo 'Build NPM....!!!'
+                npm ci
                    npm run build
                 """
             }
