@@ -37,6 +37,7 @@ pipeline {
             steps {
                 sh """
                    echo 'Starting application and running E2E tests...'
+                   sudo chown -R 501:20 "/.npm"
                    npm install serve
                    node_modules/.bin/serve -s build &
                    
