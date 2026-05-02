@@ -6,7 +6,7 @@ pipeline {
             agent {
                 docker {
                     image 'node:18'
-                    reuseNode true
+                    args '-u root:root' 
                 }
             }
             steps {
@@ -19,13 +19,19 @@ pipeline {
                    CI=true npm test
                 """
             }
-        }
+            // Fix: Move the junit report here, where the agent is active
+            post {
+                always {
+                    junit 'test-results/junit.xml'
+                }
+            }
+        }s
 
         stage('E2E Tests') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-                    reuseNode true
+                    args '-u root:root'
                 }
             }
             steps {
@@ -34,30 +40,12 @@ pipeline {
                    npm install -g serve
                    serve -s build &
                    
-                   # Wait for server to be ready
-                   npx wait-on http://localhost:3000 --timeout 60000
+                   # Wait for server to be ready (approx 10 seconds)
+                   sleep 10
                    
                    npx playwright test
                 """
             }
-        }
-
-        stage('Verify Results') {
-            steps {
-                sh """
-                    if [ -f test-results/junit.xml ]; then
-                        echo "Unit test results found."
-                    else
-                        echo "Unit test results missing!"
-                    fi
-                """
-            }
-        }
-    }
-
-    post {
-        always {
-            junit 'test-results/junit.xml'
         }
     }
 }
