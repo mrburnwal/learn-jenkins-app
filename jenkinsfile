@@ -28,7 +28,7 @@ pipeline{
         stage ('Verify') {
             steps {
             sh """
-                if [ -f test-results/test.xml]; then
+                if [ -f test-results/junit.xml]; then
                     echo "Test results found"
                 else
                     echo "Test result not found"
@@ -39,7 +39,7 @@ pipeline{
     }
     post {
         always{
-        junit 'test-results/test.xml'
+        junit 'test-results/junit.xml'
     }
 }
 }
