@@ -1,0 +1,41 @@
+pipeline{
+    agent {
+        docker {
+            image 'node:18-alpine'
+            reuseNode true
+        }
+    }
+
+    stages{
+        stage ('Build') {
+            steps {
+                sh """
+                   echo 'Build NPM....!!!'
+                   npm run build
+                """
+            }
+        }
+
+        stage ('Test') {
+            steps {
+                sh """
+                   echo "Running Tests....!!!"
+                   npm test
+                """
+            }
+        }
+
+        stage ('Verify') {
+            sh """
+                if [ -f test-results/test.xml]; then
+                    echo "Test results found"
+                else
+                    echo "Test result not found"
+                fi
+            """
+        }
+    }
+    post {
+        junit 'test-results/test.xml'
+    }
+}
