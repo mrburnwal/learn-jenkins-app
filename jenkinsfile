@@ -25,7 +25,7 @@ pipeline {
                     junit 'test-results/junit.xml'
                 }
             }
-        }s
+        }
 
         stage('E2E Tests') {
             agent {
