@@ -1,47 +1,63 @@
-pipeline{
-    agent {
-        docker {
-            image 'node:18'
-            reuseNode true
-        }
-    }
+pipeline {
+    agent none
 
-    stages{
-        stage ('Build') {
+    stages {
+        stage('Build & Test') {
+            agent {
+                docker {
+                    image 'node:18'
+                    reuseNode true
+                }
+            }
             steps {
                 sh """
-                   echo 'Build NPM....!!!'
-                   rm -rf node_modules
+                   echo 'Installing dependencies and building...'
                    npm ci
                    npm run build
+                   
+                   echo 'Running unit tests...'
+                   CI=true npm test
                 """
             }
         }
 
-        stage ('Test') {
+        stage('E2E Tests') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                }
+            }
             steps {
                 sh """
-                   echo "Running Tests....!!!"
-                   npm test
+                   echo 'Starting application and running E2E tests...'
+                   npm install -g serve
+                   serve -s build &
+                   
+                   # Wait for server to be ready
+                   npx wait-on http://localhost:3000 --timeout 60000
+                   
+                   npx playwright test
                 """
             }
         }
 
-        stage ('Verify') {
+        stage('Verify Results') {
             steps {
-            sh """
-                if [ -f test-results/junit.xml]; then
-                    echo "Test results found"
-                else
-                    echo "Test result not found"
-                fi
-            """
+                sh """
+                    if [ -f test-results/junit.xml ]; then
+                        echo "Unit test results found."
+                    else
+                        echo "Unit test results missing!"
+                    fi
+                """
             }
         }
     }
+
     post {
-        always{
-        junit 'test-results/junit.xml'
+        always {
+            junit 'test-results/junit.xml'
+        }
     }
-}
 }
