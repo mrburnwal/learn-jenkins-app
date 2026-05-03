@@ -8,6 +8,7 @@ pipeline {
                 docker {
                     image 'node:18'
                     reuseNode true
+                    args "-e HOME=.cache"
                 }
             }
             steps {
@@ -29,6 +30,7 @@ pipeline {
                         docker {
                             image 'node:18'
                             reuseNode true
+                            args "-e HOME=.cache"
                         }
                     }
 
@@ -50,6 +52,7 @@ pipeline {
                         docker {
                             image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                             reuseNode true
+                            args "-e HOME=.cache"
                         }
                     }
 
@@ -76,6 +79,7 @@ pipeline {
                 docker {
                     image 'node:18'
                     reuseNode true
+                    args "-e HOME=.cache"
                 }
             }
             steps {
