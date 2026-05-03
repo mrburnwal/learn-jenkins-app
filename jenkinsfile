@@ -40,8 +40,12 @@ pipeline {
         always {
             echo 'Recording test results and reports...'
             
-            // Record JUnit results
-            junit 'test-results/junit.xml'
+            // Debug: Show where files are
+            sh 'ls -R test-results || true'
+            sh 'ls -R playwright-report || true'
+            
+            // Record any JUnit-style XML files found in the workspace
+            junit '**/junit.xml'
             
             // Publish Playwright HTML Report
             publishHTML(target: [
@@ -52,12 +56,6 @@ pipeline {
                 reportFiles: 'index.html',
                 reportName: 'Playwright HTML Report'
             ])
-        }
-        success {
-            echo 'Build successful!'
-        }
-        failure {
-            echo 'Build failed. Review console output and reports.'
         }
     }
 }
