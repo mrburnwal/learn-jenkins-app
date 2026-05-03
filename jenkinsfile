@@ -79,7 +79,7 @@ pipeline {
                 docker {
                     image 'node:18'
                     reuseNode true
-                    args "-e HOME=.cache"
+                    args '-u root -e HOME=.cache'
                 }
             }
             steps {
