@@ -21,13 +21,11 @@ pipeline {
         }
 
         stage('Unit Tests') {
-            reuseWorkspace() {
-                steps {
-                    script {
-                        docker.image('node:18').inside("-e HOME=.cache") {
-                           echo 'Running unit tests...'
-                           CI=true npm test
-                        }
+            steps {
+                script {
+                    docker.image('node:18').inside("-e HOME=.cache") {
+                        echo 'Running unit tests...'
+                        CI=true npm test
                     }
                 }
             }
