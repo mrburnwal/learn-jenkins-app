@@ -17,6 +17,12 @@ pipeline {
                     }
                 }
             }
+            post {
+                always {
+                    echo 'Recording Unit Test results...'
+                    junit '**/junit.xml'
+                }
+            }
         }
 
         stage('E2E Tests') {
@@ -33,29 +39,19 @@ pipeline {
                     }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Recording test results and reports...'
-            
-            // Debug: Show where files are
-            sh 'ls -R test-results || true'
-            sh 'ls -R playwright-report || true'
-            
-            // Record any JUnit-style XML files found in the workspace
-            junit '**/junit.xml'
-            
-            // Publish Playwright HTML Report
-            publishHTML(target: [
-                allowMissing: true,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'playwright-report',
-                reportFiles: 'index.html',
-                reportName: 'Playwright HTML Report'
-            ])
+            post {
+                always {
+                    echo 'Publishing E2E HTML Report...'
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Playwright HTML Report'
+                    ])
+                }
+            }
         }
     }
 }
