@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Build & Test') {
+        stage('Build') {
             steps {
                 script {
                     docker.image('node:18').inside("-e HOME=.cache") {
@@ -14,6 +14,20 @@ pipeline {
                            echo 'Running unit tests...'
                            CI=true npm test
                         """
+                    }
+                }
+            }
+            
+        }
+
+        stage('Unit Tests') {
+            reuseWorkspace() {
+                steps {
+                    script {
+                        docker.image('node:18').inside("-e HOME=.cache") {
+                           echo 'Running unit tests...'
+                           CI=true npm test
+                        }
                     }
                 }
             }
