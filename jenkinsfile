@@ -2,76 +2,87 @@ pipeline {
     agent any
 
     stages {
+
         stage('Build') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
             steps {
-                script {
-                    docker.image('node:18').inside("-e HOME=.cache") {
-                        sh """
-                           echo 'Installing dependencies and building...'
-                           npm ci
-                           npm run build
-                           
-                           echo 'Running unit tests...'
-                           CI=true npm test
-                        """
+                sh '''
+                    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    npm run build
+                    ls -la
+                '''
+            }
+        }
+
+        stage('Tests') {
+            parallel {
+                stage('Unit tests') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+
+                    steps {
+                        sh '''
+                            #test -f build/index.html
+                            npm test
+                        '''
+                    }
+                    post {
+                        always {
+                            junit 'jest-results/junit.xml'
+                        }
+                    }
+                }
+
+                stage('E2E') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                            reuseNode true
+                        }
+                    }
+
+                    steps {
+                        sh '''
+                            npm install serve
+                            node_modules/.bin/serve -s build &
+                            sleep 10
+                            npx playwright test  --reporter=html
+                        '''
+                    }
+
+                    post {
+                        always {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                        }
                     }
                 }
             }
-            
         }
 
-
-        stage('Parallel Test') {
-            parallel{
-                
-                stage('Unit Tests') {
-                    steps {
-                        script {
-                            docker.image('node:18').inside("-e HOME=.cache") {
-                                sh """
-                                echo 'Running unit tests...'
-                                CI=true npm test
-                                """
-                            }
-                        }
-                    }
-                    post {
-                        always {
-                            echo 'Recording Unit Test results...'
-                            junit '**/junit.xml'
-                        }
-                    }
+        stage('Deploy') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
                 }
-
-                stage('E2E Tests') {
-                    steps {
-                        script {
-                            docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside("-e HOME=.cache") {
-                                sh """
-                                echo 'Starting application and running E2E tests...'
-                                npm install serve
-                                ./node_modules/.bin/serve -s build &
-                                sleep 10
-                                npx playwright test
-                                """
-                            }
-                        }
-                    }
-                    post {
-                        always {
-                            echo 'Publishing E2E HTML Report...'
-                            publishHTML(target: [
-                                allowMissing: true,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: 'playwright-report',
-                                reportFiles: 'index.html',
-                                reportName: 'Playwright HTML Report'
-                            ])
-                        }
-                    }
-                }
-
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                '''
             }
         }
     }
