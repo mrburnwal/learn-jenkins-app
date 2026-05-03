@@ -1,24 +1,21 @@
 pipeline {
-    agent none
+    agent any
 
     stages {
         stage('Build & Test') {
-            agent {
-                docker {
-                    image 'node:18'
-                    args '-e HOME=.cache'
-                    reuseNode true
-                }
-            }
             steps {
-                sh """
-                   echo 'Installing dependencies and building...'
-                   npm ci
-                   npm run build
-                   
-                   echo 'Running unit tests...'
-                   CI=true npm test
-                """
+                script {
+                    docker.image('node:18').inside("-e HOME=.cache") {
+                        sh """
+                           echo 'Installing dependencies and building...'
+                           npm ci
+                           npm run build
+                           
+                           echo 'Running unit tests...'
+                           CI=true npm test
+                        """
+                    }
+                }
             }
             post {
                 always {
@@ -28,25 +25,21 @@ pipeline {
         }
 
         stage('E2E Tests') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-                    args '-e HOME=.cache'
-                    reuseNode true
-                }
-            }
             steps {
-                sh """
-                   echo 'Starting application and running E2E tests...'
-                   npm install serve
-                   ./node_modules/.bin/serve -s build &
-                   sleep 10
-                   npx playwright test
-                """
+                script {
+                    docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside("-e HOME=.cache") {
+                        sh """
+                           echo 'Starting application and running E2E tests...'
+                           npm install serve
+                           ./node_modules/.bin/serve -s build &
+                           sleep 10
+                           npx playwright test
+                        """
+                    }
+                }
             }
             post {
                 always {
-                    
                     publishHTML(target: [
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
