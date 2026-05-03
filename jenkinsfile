@@ -24,8 +24,10 @@ pipeline {
             steps {
                 script {
                     docker.image('node:18').inside("-e HOME=.cache") {
+                        sh """
                         echo 'Running unit tests...'
                         CI=true npm test
+                        """
                     }
                 }
             }
