@@ -112,7 +112,7 @@ pipeline {
                     script {
                         env.STAGING_URL = sh(script: 'node_modules/.bin/node-jq .deploy_url staging-url.json', returnStdout: true).trim()
                     }
-                    echo "Staging URL: ${STAGING_URL}"
+                    echo "Staging URL: ${env.STAGING_URL}"
                 }
             }
         }
