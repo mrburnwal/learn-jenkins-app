@@ -79,7 +79,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Staging ') {
             agent {
                 docker {
                     image 'node:18'
@@ -99,6 +99,37 @@ pipeline {
                     node_modules/.bin/netlify link --id ${NETLIFY_PROJECT_ID}
 
                     node_modules/.bin/netlify status
+
+                    echo "deploying to staging environment....!"
+
+                    node_modules/.bin/netlify deploy --dir=build
+                '''
+            }
+        }
+
+
+        stage('Deploy Prod') {
+            agent {
+                docker {
+                    image 'node:18'
+                    reuseNode true
+                    args '-u root -e HOME=.cache'
+                }
+            }
+
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+
+                    echo "NETLIFY_PROJECT_ID: ${NETLIFY_PROJECT_ID}"
+                    echo "NETLIFY_AUTH_TOKEN: ${NETLIFY_AUTH_TOKEN}"
+
+                    node_modules/.bin/netlify link --id ${NETLIFY_PROJECT_ID}
+
+                    node_modules/.bin/netlify status
+
+                    echo "deploying to production environment....!"
 
                     node_modules/.bin/netlify deploy --dir=build --prod
                 '''
