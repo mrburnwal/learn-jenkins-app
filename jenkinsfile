@@ -95,7 +95,11 @@ pipeline {
                     echo "NETLIFY_PROJECT_ID: ${NETLIFY_PROJECT_ID}"
                     echo "NETLIFY_AUTH_TOKEN: ${NETLIFY_AUTH_TOKEN}"
 
+                    node_modules/.bin/netlify link --id ${NETLIFY_PROJECT_ID}
+
                     node_modules/.bin/netlify status
+
+                    node_modules/.bin/netlify deploy --dir=build --prod
                 '''
             }
         }
