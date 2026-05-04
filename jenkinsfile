@@ -90,7 +90,7 @@ pipeline {
 
             steps {
                 sh '''
-                    npm install netlify-cli
+                    npm install netlify-cli node-jq
                     node_modules/.bin/netlify --version
 
                     echo "NETLIFY_PROJECT_ID: ${NETLIFY_PROJECT_ID}"
@@ -102,15 +102,51 @@ pipeline {
 
                     echo "deploying to staging environment....!"
 
-                    node_modules/.bin/netlify deploy --dir=build
+                    node_modules/.bin/netlify deploy --dir=build --json > staging-url.json
+                    node_modules/.bin/node-jq '.deploy_url' staging-url.json
                 '''
+            }
+
+            post {
+                success {
+                    script {
+                        env.STAGING_URL = sh(script: 'node_modules/.bin/node-jq .deploy_url staging-url.json', returnStdout: true).trim()
+                    }
+                    echo "Staging URL: ${STAGING_URL}"
+                }
+            }
+        }
+
+        stage('Staging E2E Verify') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                    args "-e HOME=.cache"
+                }
+            }
+
+            environment {
+                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
+            }
+
+            steps {
+                sh '''
+                    npx playwright test  --reporter=html
+                '''
+            }
+
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E Staging Report', reportTitles: '', useWrapperFileDirectly: true])
+                }
             }
         }
 
         stage('Approval Stage') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    input message: 'Ready to Deploy to Production?', ok: 'Yes, I want to continue.'
+                    input message: 'Ready to Deploy?', ok: 'Yes, I want to continue.'
                 }
             }
         }
@@ -142,7 +178,8 @@ pipeline {
                 '''
             }
         }
-        stage('Post E2E Verify') {
+
+        stage('Production E2E Verify') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
@@ -163,10 +200,9 @@ pipeline {
 
             post {
                 always {
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2e Post Report', reportTitles: '', useWrapperFileDirectly: true])
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E Post Report', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
         }
-
     }
 }
