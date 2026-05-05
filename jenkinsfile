@@ -132,8 +132,10 @@ pipeline {
 
             steps {
                 sh '''
-                    echo "staging url : ${CI_ENVIRONMENT_URL}"
-                    npx playwright test  --reporter=html
+                            CLEAN_URL=$(echo "$CI_ENVIRONMENT_URL" | tr -d '"')
+                            export CI_ENVIRONMENT_URL=$CLEAN_URL
+                            echo "Clean staging url: $CI_ENVIRONMENT_URL"
+                            npx playwright test --reporter=html
                 '''
             }
 
