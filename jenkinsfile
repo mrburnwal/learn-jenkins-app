@@ -132,7 +132,7 @@ pipeline {
 
             steps {
                 sh '''
-                    echo "staging url : ${env.CI_ENVIRONMENT_URL}"
+                    echo "staging url : ${CI_ENVIRONMENT_URL}"
                     npx playwright test  --reporter=html
                 '''
             }
