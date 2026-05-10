@@ -88,9 +88,9 @@ pipeline {
                 }
             }
 
-            environment {
-                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
-            }
+            // environment {
+            //     CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
+            // }
 
             steps {
                 sh '''
@@ -104,9 +104,9 @@ pipeline {
                     echo "deploying to staging environment....!"
 
                     node_modules/.bin/netlify deploy --dir=build --json > staging-url.json
-                    node_modules/.bin/node-jq '.deploy_url' staging-url.json
+                    STAGING_URL=$(node_modules/.bin/node-jq '.deploy_url' staging-url.json)
 
-                    CLEAN_URL=$(echo "$CI_ENVIRONMENT_URL" | tr -d '"')
+                    CLEAN_URL=$(echo "$STAGING_URL" | tr -d '"')
                     export CI_ENVIRONMENT_URL=$CLEAN_URL
                     echo "Clean staging url: $CI_ENVIRONMENT_URL"
                     npx playwright test --reporter=html
