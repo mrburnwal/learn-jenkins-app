@@ -79,22 +79,23 @@ pipeline {
             }
         }
 
-        stage('Deploy Staging ') {
+        stage('Deploy Staging and E2E Testing') {
             agent {
                 docker {
-                    image 'node:18'
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                     reuseNode true
                     args '-u root -e HOME=.cache'
                 }
+            }
+
+            environment {
+                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
             }
 
             steps {
                 sh '''
                     npm install netlify-cli node-jq
                     node_modules/.bin/netlify --version
-
-                    echo "NETLIFY_PROJECT_ID: ${NETLIFY_PROJECT_ID}"
-                    echo "NETLIFY_AUTH_TOKEN: ${NETLIFY_AUTH_TOKEN}"
 
                     node_modules/.bin/netlify link --id ${NETLIFY_PROJECT_ID}
 
@@ -104,6 +105,11 @@ pipeline {
 
                     node_modules/.bin/netlify deploy --dir=build --json > staging-url.json
                     node_modules/.bin/node-jq '.deploy_url' staging-url.json
+
+                    CLEAN_URL=$(echo "$CI_ENVIRONMENT_URL" | tr -d '"')
+                    export CI_ENVIRONMENT_URL=$CLEAN_URL
+                    echo "Clean staging url: $CI_ENVIRONMENT_URL"
+                    npx playwright test --reporter=html
                 '''
             }
 
@@ -114,37 +120,13 @@ pipeline {
                     }
                     echo "Staging URL: ${env.STAGING_URL}"
                 }
-            }
-        }
-
-        stage('Staging E2E Verify') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-                    reuseNode true
-                    args "-e HOME=.cache"
-                }
-            }
-
-            environment {
-                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
-            }
-
-            steps {
-                sh '''
-                            CLEAN_URL=$(echo "$CI_ENVIRONMENT_URL" | tr -d '"')
-                            export CI_ENVIRONMENT_URL=$CLEAN_URL
-                            echo "Clean staging url: $CI_ENVIRONMENT_URL"
-                            npx playwright test --reporter=html
-                '''
-            }
-
-            post {
                 always {
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright E2E Staging Report', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
         }
+
+
 
         stage('Approval Stage') {
             steps {
